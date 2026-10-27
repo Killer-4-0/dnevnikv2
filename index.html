@@ -1,0 +1,753 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#0a1628">
+  <title>Мой дневник здоровья</title>
+  <meta name="description" content="Дневник питания, тренировок и веса. Работает офлайн, устанавливается на телефон.">
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="icon" type="image/svg+xml" href="favicon.svg">
+  <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <header class="app-header">
+    <div class="logo">
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#4da3ff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12h4l3-8 5 16 3-8h5"/></svg>
+    </div>
+    <div class="titles">
+      <h1>Мой дневник здоровья</h1>
+      <p id="headerSub">Питание · Тренировки · Прогресс</p>
+    </div>
+    <button class="header-btn" id="installBtn" hidden>Установить</button>
+    <div class="sync-dot" id="syncDot" title="Синхронизация"></div>
+  </header>
+
+  <main>
+    <!-- ======== ДНЕВНИК ======== -->
+    <section class="view" id="view-diary">
+      <div class="summary" id="summaryCards"></div>
+
+      <div class="date-row">
+        <button class="nav-btn" data-action="prevDay">‹</button>
+        <input type="date" id="dateInput">
+        <button class="nav-btn" data-action="nextDay">›</button>
+        <button class="today-btn ghost" data-action="today">Сегодня</button>
+      </div>
+
+      <div class="quick-actions">
+        <button data-action="addFood"><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg>Поиск КБЖУ</button>
+        <button data-action="photoFood"><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M23 19a2 2 0 01-2 2H3a2 2 0 01-2-2V8a2 2 0 012-2h4l2-3h6l2 3h4a2 2 0 012 2z"/><circle cx="12" cy="13" r="4"/></svg>Фото блюда</button>
+        <button data-action="voiceFood"><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 1a3 3 0 00-3 3v8a3 3 0 006 0V4a3 3 0 00-3-3z"/><path d="M19 10v2a7 7 0 01-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/></svg>Голосом</button>
+        <button data-action="barcodeFood"><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round"><path d="M3 5V3h2M3 12v-2M3 19v-2M9 5V3h2M9 12v-2M9 19v-2M15 5V3h2M15 12v-2M15 19v-2M21 5V3h0M21 12v-2M21 19v-2"/></svg>Штрихкод</button>
+      </div>
+
+      <div class="panel" id="waterPanel"></div>
+
+      <div id="mealSections"></div>
+
+      <div class="btn-row">
+        <button class="ghost" data-action="copyYesterday">Скопировать вчерашний рацион</button>
+        <button class="ghost" data-action="showAddManually">Добавить вручную (без базы)</button>
+        <button class="ghost" data-action="newRecipe">Своё блюдо из ингредиентов</button>
+      </div>
+
+      <div class="panel" style="margin-top:16px">
+        <div class="section-title">Вес <button class="small ghost" data-action="gotoProgress">График</button></div>
+        <form class="field-grid" data-form="weight">
+          <label class="field">Вес, кг<input type="number" name="kg" min="1" max="500" step="0.1" placeholder="Например, 68.5" required></label>
+          <button type="submit">Сохранить вес</button>
+        </form>
+        <div class="hint">Последний вес: <b id="lastWeightInline">—</b></div>
+      </div>
+    </section>
+
+    <!-- ======== ТРЕНИРОВКИ ======== -->
+    <section class="view" id="view-workouts">
+      <div class="date-row">
+        <button class="nav-btn" data-action="prevDay">‹</button>
+        <input type="date" id="dateInputW">
+        <button class="nav-btn" data-action="nextDay">›</button>
+        <button class="today-btn ghost" data-action="today">Сегодня</button>
+      </div>
+
+      <div class="panel">
+        <div class="section-title">Тренировка за день</div>
+        <div class="hint" style="margin:0 0 10px">План — заранее, вес и повторы — на самой тренировке: откройте план и нажмите «Начать тренировку». Форма ниже — для быстрой записи без плана.</div>
+        <form data-form="workout">
+          <div class="field-grid">
+            <label class="field" style="grid-column:1/-1">Название<input name="name" placeholder="Например: спина" required></label>
+            <label class="field">Длительность, мин<input type="number" name="minutes" min="0" step="1" placeholder="60"></label>
+            <label class="field">Калории<input type="number" name="calories" min="0" step="1" placeholder="200"></label>
+            <label class="field" style="grid-column:1/-1">Упражнения и подходы (с новой строки)<textarea name="details" placeholder="Жим лёжа 3x8 по 60 кг&#10;Тяга штанги 4x10 по 40 кг"></textarea></label>
+          </div>
+          <div class="btn-row"><button type="submit">Добавить тренировку</button></div>
+        </form>
+        <div id="workoutList" class="list"></div>
+      </div>
+
+      <div class="panel">
+        <div class="section-title">Тренировочные планы
+          <span class="small-actions">
+            <button class="small ghost" data-action="loadSamplePlans">Примеры планов</button>
+          </span>
+        </div>
+        <p class="hint" style="margin-top:0">Создай план один раз — потом нажимай «Начать тренировку» и записывай вес и повторы по ходу занятия. Приложение покажет веса с прошлой тренировки.</p>
+        <div class="btn-row">
+          <button data-action="newPlan">＋ Создать план</button>
+        </div>
+        <div id="planList"></div>
+      </div>
+
+      <div class="panel">
+        <div class="section-title">История тренировок</div>
+        <div class="hint" style="margin:0 0 10px">Все прошедшие тренировки — нажми на запись, чтобы раскрыть подходы и веса.</div>
+        <div id="workoutHistory"></div>
+      </div>
+    </section>
+
+    <!-- ======== ПРОГРЕСС ======== -->
+    <section class="view" id="view-progress">
+      <div class="panel">
+        <div class="section-title">Вес</div>
+        <div id="weightStats"></div>
+        <div class="chart-wrap" id="weightChart"></div>
+        <div class="btn-row"><button class="ghost" data-action="addWeightNow">Записать вес</button></div>
+      </div>
+
+      <div class="panel">
+        <div class="section-title">Калории за 14 дней</div>
+        <div class="chart-wrap" id="calChart"></div>
+        <div class="hint">Цель: <span id="goalCalLabel">не задана (укажи в настройках)</span></div>
+      </div>
+
+      <div class="panel forecast-card" id="forecastPanel"></div>
+
+      <div class="panel">
+        <div class="section-title">Итоги недели</div>
+        <div id="weeklyReview"></div>
+      </div>
+
+      <div class="panel">
+        <div class="section-title">История веса</div>
+        <div id="weightList"></div>
+      </div>
+    </section>
+
+    <!-- ======== ПЛАН ПИТАНИЯ ======== -->
+    <section class="view" id="view-mealplan">
+      <div class="date-row">
+        <button class="nav-btn" data-action="prevDay">‹</button>
+        <input type="date" id="dateInputP">
+        <button class="nav-btn" data-action="nextDay">›</button>
+        <button class="today-btn ghost" data-action="today">Сегодня</button>
+      </div>
+      <div class="hint" style="margin:0 0 12px">Запланируй питание заранее: добавь блюда, увидишь сумму калорий и скопируй план в дневник одним нажатием.</div>
+      <div id="mealPlanSummary"></div>
+      <div id="mealPlanSections"></div>
+      <div class="plan-actions">
+        <button data-action="copyPlanToDiary">Скопировать план в дневник</button>
+        <button class="ghost" data-action="applyBalanced">Пример меню: сбалансированный (~1750 ккал)</button>
+        <button class="ghost" data-action="applyProtein">Пример меню: высокобелковый (~1700 ккал)</button>
+        <button class="danger" data-action="clearPlan">Очистить план</button>
+      </div>
+    </section>
+
+    <!-- ======== НАСТРОЙКИ ======== -->
+    <section class="view" id="view-settings">
+      <div class="settings-section">
+        <div class="panel">
+          <div class="section-title">Цели на день</div>
+          <form data-form="goals">
+            <div class="field-grid-3">
+              <label class="field">Калории, ккал<input type="number" name="goalCal" min="0" step="10" placeholder="2000"></label>
+              <label class="field">Белки, г<input type="number" name="goalP" min="0" step="1" placeholder="120"></label>
+              <label class="field">Жиры, г<input type="number" name="goalF" min="0" step="1" placeholder="70"></label>
+              <label class="field">Углеводы, г<input type="number" name="goalC" min="0" step="1" placeholder="220"></label>
+              <label class="field">Вода, мл<input type="number" name="waterGoal" min="0" step="100" placeholder="2000"></label>
+              <label class="field">Цель веса, кг<input type="number" name="goalWeight" min="0" step="0.1" placeholder="70"></label>
+            </div>
+            <div class="btn-row"><button type="submit">Сохранить цели</button></div>
+          </form>
+          <div class="hint">По целям считается прогноз достижения веса и полоски прогресса за день.</div>
+        </div>
+      </div>
+
+      <div class="settings-section">
+        <div class="panel">
+          <div class="section-title">Приёмы пищи</div>
+          <div class="meal-chips" id="mealChips"></div>
+          <form class="field-grid" data-form="addMealName" style="margin-top:6px">
+            <label class="field">Новый приём пищи<input name="mealName" placeholder="Например: полдник" maxlength="24" required></label>
+            <button type="submit">Добавить</button>
+          </form>
+          <div class="hint">Можно задать до 10 приёмов пищи — например, «второй завтрак» или «после тренировки».</div>
+        </div>
+      </div>
+
+      <div class="settings-section">
+        <div class="panel">
+          <div class="section-title">Синхронизация (вход по почте)</div>
+          <p class="hint" style="margin:0 0 10px">Создайте аккаунт по почте и паролю — и дневник будет доступен с любого устройства. Этим же приложением могут пользоваться другие люди: каждый со своим аккаунтом.</p>
+          <div id="syncSection"></div>
+          <details class="help">
+            <summary>Как настроить (5 минут, бесплатно)</summary>
+            <ol>
+              <li>Открой <code>console.firebase.google.com</code> → «Create project» (любое имя, аналитику можно отключить).</li>
+              <li>Build → <b>Authentication</b> → Get started → Sign-in method → <b>Email/Password</b> → Enable → Save. (Хотите и кнопку Google — там же включите Google.)</li>
+              <li>Build → <b>Firestore Database</b> → Create database → «Start in production mode» → регион любой.</li>
+              <li>Вкладка <b>Rules</b> (правила) — замени текст на правила ниже и нажми Publish:</li>
+              <li>Вернись на главную проекта → <b>Project settings</b> (шестерёнка) → внизу «Your apps» → иконка <b>Web «</>»</b> → задай имя → скопируй объект <code>firebaseConfig</code>.</li>
+            </ol>
+            <pre>rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    match /users/{uid}/{document=**} {
+      allow read, write:
+        if request.auth != null
+        && request.auth.uid == uid;
+    }
+  }
+}</pre>
+            <li>Вставь firebaseConfig в поле «Конфигурация Firebase» в приложении и нажми «Сохранить конфиг». Затем войдите по почте — прямо в приложении.</li>
+          </details>
+          <div class="hint">Данные хранятся только в вашем Firestore — доступ только у вашего Google-аккаунта.</div>
+        </div>
+      </div>
+
+      <div class="settings-section">
+        <div class="panel">
+          <div class="section-title">Распознавание еды по фото (Gemini)</div>
+          <form data-form="ai">
+            <div class="field-grid">
+              <label class="field">Ключ Gemini API<input name="geminiKey" type="password" placeholder="AIza..." autocomplete="off"></label>
+              <label class="field">Модель<input name="aiModel" placeholder="gemini-2.5-flash"></label>
+            </div>
+            <div class="btn-row"><button type="submit">Сохранить</button></div>
+          </form>
+          <div class="hint">Ключ нужен только для функции «Фото блюда»: фотографируешь тарелку — приложение само распознаёт блюда, вес и КБЖУ. Бесплатный ключ: <b>aistudio.google.com/apikey</b> (Google AI Studio). Ключ хранится только на вашем устройстве.</div>
+        </div>
+      </div>
+
+      <div class="settings-section">
+        <div class="panel">
+          <div class="section-title">Данные</div>
+          <div class="btn-row" style="margin-top:0">
+            <button class="ghost" data-action="exportData">Экспорт (скачать файл)</button>
+            <button class="ghost" data-action="importData">Импорт из файла</button>
+            <button class="danger" data-action="clearData">Удалить все данные</button>
+          </div>
+          <div class="hint">Все записи хранятся в этом браузере/телефоне (офлайн). Очистка данных браузера или кнопка «Удалить» может стереть дневник — делайте экспорт для резервной копии.</div>
+        </div>
+      </div>
+
+      <div class="settings-section">
+        <div class="panel">
+          <div class="section-title">Приложение на телефон</div>
+          <div id="installGuide"></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ======== ПРОВЕРКА API ======== -->
+    <section class="view" id="view-api">
+      <div class="panel">
+        <div class="section-title">Проверка API ключа</div>
+        <div class="hint" style="margin:0 0 12px">Вставьте API ключ и напишите сообщение — убедитесь, что он работает. Если API запрещает вызовы из браузера (CORS), запрос автоматически пойдёт через встроенный прокси сайта.</div>
+        <div class="field-grid-3" style="grid-template-columns:1fr">
+          <label class="field">API ключ
+            <input type="password" id="apiKeyInput" placeholder="Вставьте ваш API ключ…">
+          </label>
+          <label class="field">URL API
+            <input type="text" id="apiUrlInput" placeholder="https://api.munito.ai/inference/v1" value="https://api.munito.ai/inference/v1">
+          </label>
+          <label class="field">Модель
+            <select id="apiModelSelect">
+              <option value="deepseek-ai/deepseek-v4-flash">DeepSeek V4 Flash</option>
+              <option value="deepseek-ai/deepseek-v4.1-flash-1017">DeepSeek V4.1 Flash</option>
+              <option value="google/gemma-4-12b">Gemma 4 12B</option>
+              <option value="zai-org/glm-5.3-flash">GLM 5.3 Flash</option>
+              <option value="aleph-alpha/kolibri-1">Kolibri 1</option>
+              <option value="qwen/qwen3.8-27b">Qwen 3.8 27B</option>
+              <option value="blockbrain/cygnet">Cygnet</option>
+              <option value="perplexity-ai/pplx-decider-v1.2">PPLX Decider v1.2</option>
+              <option value="lightonai/lightonocr-2-1b">LightOnOCR 2 1B</option>
+            </select>
+          </label>
+        </div>
+      </div>
+      <div class="panel" style="padding:0;border-radius:12px;overflow:hidden;display:flex;flex-direction:column;max-height:50vh">
+        <div id="chatMessages" style="flex:1;overflow-y:auto;padding:14px;display:flex;flex-direction:column;gap:10px">
+          <div style="text-align:center;color:var(--muted);margin:auto">Отправьте первое сообщение ↓</div>
+        </div>
+        <div style="padding:10px 14px;border-top:1px solid var(--border);background:var(--panel-2);display:flex;gap:8px">
+          <input type="text" id="chatInput" placeholder="Напишите сообщение…" style="flex:1;margin:0">
+          <button id="chatSendBtn">→</button>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <!-- ======== Нижняя навигация ======== -->
+  <nav class="tabbar">
+    <div class="tabbar-inner">
+      <button data-tab="diary" class="active"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9h18M3 15h18M12 3v18"/></svg>Дневник</button>
+      <button data-tab="workouts"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6.5 6.5v11M17.5 6.5v11M3 9v6M21 9v6M6.5 12h11"/></svg>Тренировки</button>
+      <button data-tab="progress"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><path d="M7 15l4-6 4 3 5-8"/></svg>Прогресс</button>
+      <button data-tab="mealplan"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>План питания</button>
+      <button data-tab="settings"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 11-2.83 2.83l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 11-4 0v-.09A1.65 1.65 0 008.6 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 11-2.83-2.83l.06-.06a1.65 1.65 0 00.33-1.82 1.65 1.65 0 00-1.51-1H3a2 2 0 110-4h.09A1.65 1.65 0 004.6 8.6a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 112.83-2.83l.06.06a1.65 1.65 0 001.82.33H9a1.65 1.65 0 001-1.51V3a2 2 0 114 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 112.83 2.83l-.06.06a1.65 1.65 0 00-.33 1.82V9a1.65 1.65 0 001.51 1H21a2 2 0 110 4h-.09a1.65 1.65 0 00-1.51 1z"/></svg>Ещё</button>
+      <button data-tab="api"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2a2 2 0 0 1 2 2c0 .74-.4 1.39-1 1.73V7h1a7 7 0 0 1 7 7h1a1 1 0 1 1 0 2h-1.07A7.001 7.001 0 0 1 13 20h-2a7 7 0 0 1-7-7H2a1 1 0 1 1 0-2h1a7 001 0 0 1 7-7h1V5.73c-.6-.34-1-.99-1-1.73a2 2 0 0 1 2-2m-4 10a1 1 0 0 0-1 1v4a1 1 0 0 0 2 0v-4a1 1 0 0 0-1-1m8 0a1 1 0 0 0-1 1v4a1 1 0 0 0 2 0v-4a1 1 0 0 0-1-1"/></svg>API</button>
+    </div>
+  </nav>
+
+  <div id="modal-root"></div>
+  <div id="toast-root"></div>
+
+  <script>window.__API_BASE__ = "port/8787";</script>
+  <script src="js/config.js"></script>
+  <script src="js/storage.js"></script>
+  <script src="js/db.js"></script>
+  <script src="js/app.js"></script>
+<script data-pplx-inline-edit>
+(function () {
+  if (window === window.top) return;
+
+  const allowedParentOrigins = ["https://www.perplexity.ai","https://perplexity.ai","https://testing.perplexity.ai","https://staging.perplexity.ai","https://*.preview.i.perplexity.ai","http://perplexity.localhost","http://localhost:1420","http://127.0.0.1:1420","http://localhost:3000","http://127.0.0.1:3000","http://localhost:5173","http://127.0.0.1:5173"];
+  const MAX_FONT_BYTES = 500 * 1024;
+  const MAX_TOTAL_FONT_BYTES = 2 * 1024 * 1024;
+  const DEFAULT_LINE_HEIGHT = 16;
+  let scrollForwarding = false;
+  let scrollRaf = 0;
+  let trustedTopOrigin = null;
+
+  // Allow entries like "https://*.preview.i.perplexity.ai" — the wildcard
+  // matches a single DNS label (no dots), so "https://*.foo" cannot stretch
+  // across multiple labels.
+  function matchesAllowedOrigin(origin) {
+    if (!origin) return false;
+    for (const entry of allowedParentOrigins) {
+      if (!entry.includes("*")) {
+        if (entry === origin) return true;
+        continue;
+      }
+      const pattern = new RegExp(
+        "^" +
+          entry.replace(/[.+?^${}()|[\]\\]/g, "\\$&").replace(/\*/g, "[^.]+") +
+          "$",
+      );
+      if (pattern.test(origin)) return true;
+    }
+    return false;
+  }
+
+  // Trust decision: when the sender is same-origin-visible (event.origin is a
+  // real origin like https://www.perplexity.ai) we trust event.origin directly.
+  // When event.origin is "null" (opaque broker srcdoc), we fall back to the
+  // broker's stamped `parentOrigin` to identify the top window. The fallback
+  // is claim-only — we rely on the browser's native `targetOrigin` enforcement
+  // on the response path (see postToTrustedTop) to ensure replies can't be
+  // delivered to anyone but the actual top window of that claimed origin.
+  function getTrustedParentOrigin(event) {
+    const forwardedParentOrigin =
+      typeof event.data.parentOrigin === "string" ? event.data.parentOrigin : null;
+    const parentOrigin = event.origin === "null" ? forwardedParentOrigin : event.origin;
+    return matchesAllowedOrigin(parentOrigin) ? parentOrigin : null;
+  }
+
+  // All responses go to window.top with targetOrigin = the allowlisted origin.
+  // An attacker that iframes us inside their own null-origin broker can claim
+  // any parentOrigin they like, but the browser will drop the reply whenever
+  // the real top's origin doesn't match — so the screenshot never leaves.
+  function postToTrustedTop(message) {
+    if (!trustedTopOrigin) return;
+    try {
+      window.top.postMessage(message, trustedTopOrigin);
+    } catch (_error) {}
+  }
+
+  const PICK_CAPABILITIES = ["pick"];
+  const PICK_CHAIN_LENGTH = 4;
+  const PICK_MAX_TEXT_CHARS = 120;
+  const PICK_MAX_HTML_CHARS = 300;
+
+  function truncate(value, maxChars) {
+    return value.length > maxChars ? value.slice(0, maxChars - 1) + "…" : value;
+  }
+
+  function isPickableElement(element) {
+    return (
+      element instanceof Element &&
+      element !== document.documentElement &&
+      element !== document.body
+    );
+  }
+
+  function resolvePickTarget(x, y) {
+    if (!Number.isFinite(x) || !Number.isFinite(y)) return null;
+    const element = document.elementFromPoint(x, y);
+    return isPickableElement(element) ? element.closest("svg") || element : null;
+  }
+
+  function pickLabel(element) {
+    if (element.id) return element.localName + "#" + element.id;
+    return [element.localName].concat(Array.from(element.classList).slice(0, 2)).join(".");
+  }
+
+  // Only attributes that help find the element in source. data-* values and URL
+  // query strings or fragments can carry tokens.
+  const PICK_ATTRIBUTES = new Set([
+    "id",
+    "class",
+    "name",
+    "type",
+    "role",
+    "alt",
+    "aria-label",
+    "href",
+    "src",
+  ]);
+
+  function pickAttributeValue(attribute) {
+    return attribute.name === "href" || attribute.name === "src"
+      ? attribute.value.split(/[?#]/)[0]
+      : attribute.value;
+  }
+
+  function describePickElement(element) {
+    const chain = [];
+    for (
+      let current = element;
+      isPickableElement(current) && chain.length < PICK_CHAIN_LENGTH;
+      current = current.parentElement
+    ) {
+      chain.unshift(current);
+    }
+    const attributes = Array.from(element.attributes)
+      .filter((attribute) => PICK_ATTRIBUTES.has(attribute.name))
+      .map((attribute) => ` ${attribute.name}="${pickAttributeValue(attribute).replace(/"/g, "&quot;")}"`)
+      .join("");
+    const text = (element.innerText || element.textContent || "").replace(/\s+/g, " ").trim();
+    return {
+      chain: chain.map(pickLabel),
+      html: truncate(`<${element.localName}${attributes}>`, PICK_MAX_HTML_CHARS),
+      text: text ? truncate(text, PICK_MAX_TEXT_CHARS) : undefined,
+    };
+  }
+
+  // Hover asks once per frame, and innerText on a large section forces layout,
+  // so only the rect is re-read while the pointer stays on the same element.
+  // Clicks ask for fresh details since the page may have changed the element.
+  let lastPick = null;
+
+  function describePickTarget(element, fresh) {
+    if (fresh || lastPick?.element !== element) {
+      lastPick = { element, details: describePickElement(element) };
+    }
+    const rect = element.getBoundingClientRect();
+    return {
+      rect: { x: rect.left, y: rect.top, width: rect.width, height: rect.height },
+      ...lastPick.details,
+    };
+  }
+
+  function inlineAll(original, clone) {
+    if (original.nodeType !== 1 || clone.nodeType !== 1) return;
+
+    try {
+      const computedStyle = getComputedStyle(original);
+      // cssText on a computed style is the serialized declaration in modern
+      // Chromium/Safari — a single read beats enumerating ~400 longhand
+      // properties. Firefox returns "" here, so we fall back on empty.
+      const serialized = computedStyle.cssText;
+      if (serialized) {
+        clone.style.cssText = serialized;
+      } else {
+        const parts = new Array(computedStyle.length);
+        for (let index = 0; index < computedStyle.length; index += 1) {
+          const property = computedStyle[index];
+          parts[index] = `${property}:${computedStyle.getPropertyValue(property)};`;
+        }
+        clone.style.cssText = parts.join("");
+      }
+    } catch (_error) {}
+
+    const originalChildren = original.children;
+    const clonedChildren = clone.children;
+    for (
+      let index = 0;
+      index < originalChildren.length && index < clonedChildren.length;
+      index += 1
+    ) {
+      inlineAll(originalChildren[index], clonedChildren[index]);
+    }
+  }
+
+  function extractFontUrl(srcValue) {
+    const matches = [
+      ...srcValue.matchAll(
+        /url\(["']?([^"')]+)["']?\)(?:\s*format\(["']?([^"')]+)["']?\))?/gi,
+      ),
+    ];
+    if (matches.length === 0) return null;
+    const woff2 = matches.find((m) => m[2] && m[2].toLowerCase().includes("woff2"));
+    if (woff2) return woff2[1];
+    const woff = matches.find((m) => m[2] && m[2].toLowerCase().includes("woff"));
+    if (woff) return woff[1];
+    return matches[0][1];
+  }
+
+  // Cache resolved font URL -> data URI across captures. Fonts on a page
+  // essentially never change, and a batch run emits multiple captures back to
+  // back — without this we'd refetch + re-base64 every time.
+  const fontDataUriCache = new Map();
+  const SRC_DECLARATION_RE = /src\s*:\s*[^;}]+/i;
+
+  async function fetchAsDataUri(url) {
+    if (fontDataUriCache.has(url)) return fontDataUriCache.get(url);
+    let dataUri = null;
+    try {
+      const response = await fetch(url, { mode: "cors", credentials: "omit" });
+      if (response.ok) {
+        const blob = await response.blob();
+        if (blob.size <= MAX_FONT_BYTES) {
+          dataUri = await new Promise((resolve) => {
+            const reader = new FileReader();
+            reader.onloadend = () =>
+              resolve(typeof reader.result === "string" ? reader.result : null);
+            reader.onerror = () => resolve(null);
+            reader.readAsDataURL(blob);
+          });
+        }
+      }
+    } catch (_error) {
+      dataUri = null;
+    }
+    fontDataUriCache.set(url, dataUri);
+    return dataUri;
+  }
+
+  function collectFontFaceRuleTexts() {
+    const rules = [];
+    for (const sheet of document.styleSheets) {
+      let cssRules;
+      try {
+        cssRules = sheet.cssRules;
+      } catch (_error) {
+        continue;
+      }
+      if (!cssRules) continue;
+      for (const rule of cssRules) {
+        const cssText = rule.cssText || "";
+        if (cssText.startsWith("@font-face")) rules.push(cssText);
+      }
+    }
+    return rules;
+  }
+
+  async function buildInlinedFontCss() {
+    const ruleTexts = collectFontFaceRuleTexts();
+    if (ruleTexts.length === 0) return null;
+
+    const resolved = ruleTexts.map((cssText) => {
+      if (!SRC_DECLARATION_RE.test(cssText)) return null;
+      const srcMatch = cssText.match(/src\s*:\s*([^;}]+)[;}]/i);
+      if (!srcMatch) return null;
+      const url = extractFontUrl(srcMatch[1]);
+      if (!url) return null;
+      try {
+        return { cssText, url: new URL(url, document.baseURI).href };
+      } catch (_error) {
+        return null;
+      }
+    });
+
+    const dataUris = await Promise.all(
+      resolved.map((entry) => (entry ? fetchAsDataUri(entry.url) : Promise.resolve(null))),
+    );
+
+    const inlined = [];
+    let totalBytes = 0;
+    for (let index = 0; index < resolved.length; index += 1) {
+      const entry = resolved[index];
+      const dataUri = dataUris[index];
+      if (!entry || !dataUri) continue;
+      const approxBytes = dataUri.length * 0.75;
+      if (totalBytes + approxBytes > MAX_TOTAL_FONT_BYTES) break;
+      totalBytes += approxBytes;
+      inlined.push(entry.cssText.replace(SRC_DECLARATION_RE, `src: url("${dataUri}")`));
+    }
+    return inlined.length > 0 ? inlined.join("\n") : null;
+  }
+
+  function stripExternal(clone) {
+    const images = clone.querySelectorAll("img");
+    for (let index = 0; index < images.length; index += 1) {
+      const src = images[index].getAttribute("src");
+      if (src && !src.startsWith("data:")) images[index].removeAttribute("src");
+    }
+
+    const elements = clone.querySelectorAll("*");
+    for (let index = 0; index < elements.length; index += 1) {
+      const style = elements[index].style.cssText;
+      if (style && style.includes("url(")) {
+        elements[index].style.cssText = style.replace(
+          /url\(["']?(?!data:)[^)"']*["']?\)/gi,
+          "none",
+        );
+      }
+    }
+  }
+
+  function emitScroll() {
+    scrollRaf = 0;
+    if (!scrollForwarding) return;
+    postToTrustedTop({
+      type: "INLINE_EDIT_SCROLL",
+      scrollX: window.scrollX,
+      scrollY: window.scrollY,
+      capabilities: PICK_CAPABILITIES,
+    });
+  }
+
+  window.addEventListener(
+    "scroll",
+    function () {
+      if (!scrollForwarding || scrollRaf) return;
+      scrollRaf = requestAnimationFrame(emitScroll);
+    },
+    { passive: true, capture: true },
+  );
+
+  async function handleCaptureRequest(event) {
+    const requestId = event.data.requestId;
+    const scrollX = window.scrollX;
+    const scrollY = window.scrollY;
+    const width = window.innerWidth;
+    const height = window.innerHeight;
+
+    function postResult(dataUrl) {
+      postToTrustedTop({
+        type: "INLINE_EDIT_SCREENSHOT_RESULT",
+        requestId,
+        dataUrl,
+        scrollX,
+        scrollY,
+      });
+    }
+
+    try {
+      // Wait for any pending web fonts to resolve so both inline metrics and
+      // the @font-face inlining below see the same loaded faces.
+      if (document.fonts && document.fonts.ready) {
+        try {
+          await document.fonts.ready;
+        } catch (_error) {}
+      }
+
+      const clone = document.documentElement.cloneNode(true);
+      inlineAll(document.documentElement, clone);
+
+      const removedNodes = clone.querySelectorAll("script,link[rel=\"stylesheet\"],style");
+      for (let index = 0; index < removedNodes.length; index += 1) {
+        removedNodes[index].remove();
+      }
+
+      stripExternal(clone);
+
+      // Re-embed web fonts as data-URI @font-face rules so the SVG rasterizer
+      // can resolve them — external font URLs aren't fetched during
+      // foreignObject rendering, which would otherwise force a fallback face
+      // and change text metrics.
+      const inlinedFontCss = await buildInlinedFontCss();
+      if (inlinedFontCss) {
+        const styleEl = document.createElement("style");
+        styleEl.textContent = inlinedFontCss;
+        const head = clone.querySelector("head");
+        if (head) head.appendChild(styleEl);
+        else clone.insertBefore(styleEl, clone.firstChild);
+      }
+
+      const html = new XMLSerializer().serializeToString(clone);
+      const svg =
+        `<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}">` +
+        '<foreignObject width="100%" height="100%">' +
+        `<div xmlns="http://www.w3.org/1999/xhtml" style="width:${width}px;height:${height}px;overflow:hidden">` +
+        `<div style="position:relative;left:-${scrollX}px;top:-${scrollY}px">` +
+        html +
+        "</div></div></foreignObject></svg>";
+      const svgUrl = `data:image/svg+xml;charset=utf-8,${encodeURIComponent(svg)}`;
+      const image = new Image();
+      image.onload = function () {
+        const canvas = document.createElement("canvas");
+        canvas.width = width;
+        canvas.height = height;
+        canvas.getContext("2d").drawImage(image, 0, 0);
+        postResult(canvas.toDataURL("image/png"));
+      };
+      image.onerror = function () {
+        postResult(null);
+      };
+      image.src = svgUrl;
+    } catch (_error) {
+      postResult(null);
+    }
+  }
+
+  window.addEventListener("message", function (event) {
+    if (!event.data) return;
+    // Only accept messages from the direct parent frame. Blocks sibling /
+    // unrelated-window postMessage senders that could otherwise reach us.
+    if (event.source !== window.parent) return;
+
+    const trustedParentOrigin = getTrustedParentOrigin(event);
+    if (!trustedParentOrigin) return;
+    trustedTopOrigin = trustedParentOrigin;
+
+    if (event.data.type === "INLINE_EDIT_PICK") {
+      const element = resolvePickTarget(event.data.x, event.data.y);
+      postToTrustedTop({
+        type: "INLINE_EDIT_PICK_RESULT",
+        seq: event.data.seq,
+        target: element ? describePickTarget(element, event.data.fresh === true) : null,
+      });
+      return;
+    }
+
+    if (event.data.type === "INLINE_EDIT_SCROLL_START") {
+      scrollForwarding = true;
+      emitScroll();
+      return;
+    }
+
+    if (event.data.type === "INLINE_EDIT_SCROLL_STOP") {
+      scrollForwarding = false;
+      if (scrollRaf) cancelAnimationFrame(scrollRaf);
+      scrollRaf = 0;
+      return;
+    }
+
+    if (event.data.type === "INLINE_EDIT_SCROLL_BY") {
+      const { deltaX, deltaY, deltaMode } = event.data;
+      if (!scrollForwarding || !Number.isFinite(deltaX) || !Number.isFinite(deltaY)) return;
+      if (deltaMode !== 0 && deltaMode !== 1 && deltaMode !== 2) return;
+      const lineHeight =
+        parseFloat(getComputedStyle(document.documentElement).lineHeight) || DEFAULT_LINE_HEIGHT;
+      const scaleX = deltaMode === 1 ? lineHeight : deltaMode === 2 ? window.innerWidth : 1;
+      const scaleY = deltaMode === 1 ? lineHeight : deltaMode === 2 ? window.innerHeight : 1;
+      // The selection overlay receives the wheel event instead of this iframe.
+      // Instant scrolling preserves trackpad deltas even on smooth-scroll sites.
+      window.scrollBy({ left: deltaX * scaleX, top: deltaY * scaleY, behavior: "instant" });
+      emitScroll();
+      return;
+    }
+
+    if (event.data.type !== "INLINE_EDIT_CAPTURE_REQUEST") return;
+
+    handleCaptureRequest(event);
+  });
+})();
+
+
+</script></body>
+</html>
